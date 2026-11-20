@@ -26,8 +26,8 @@ body{
   overflow:hidden;-webkit-font-smoothing:antialiased;
 }
 button,input,select,textarea{font:inherit;color:inherit}
-body,input,select,button{text-transform:lowercase}
-input::placeholder{text-transform:lowercase}
+body,input,select,button,textarea{text-transform:lowercase}
+input::placeholder,textarea::placeholder{text-transform:lowercase}
 .modal textarea{text-transform:none}
 button{cursor:pointer;background:none;border:0}
 :focus-visible{outline:2px solid rgba(255,255,255,.7);outline-offset:2px}
@@ -77,12 +77,22 @@ body.docked #card{width:min(620px,100%)}
 
 /* add */
 .add-row{padding:0 20px 8px;position:relative}
+.add-box{position:relative}
 #newTask{
-  width:100%;padding:16px 20px;border-radius:14px;font-size:22px;
+  display:block;width:100%;padding:16px 64px 16px 20px;border-radius:14px;font-size:22px;line-height:1.35;
+  resize:none;max-height:40vh;overflow-y:auto;
   background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.14);outline:none;transition:all .15s;
 }
 #newTask::placeholder{color:var(--text-faint)}
 #newTask:focus{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.35)}
+.link-btn{position:absolute;top:9px;right:9px}
+.link-btn.on{background:var(--active);color:var(--text)}
+.link-pop{display:flex;gap:8px;margin-top:8px}
+.link-pop[hidden]{display:none}
+.link-pop input{min-width:0;padding:10px 14px;border-radius:10px;font-size:18px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);outline:none}
+.link-pop input:focus{border-color:rgba(255,255,255,.4)}
+#linkName{flex:1}
+#linkUrl{flex:2;text-transform:none}
 
 /* toolbar */
 .toolbar{display:flex;align-items:center;gap:8px;padding:8px 20px 10px;font-size:17px;color:var(--text-dim);flex-wrap:wrap}
@@ -111,9 +121,15 @@ body.docked #card{width:min(620px,100%)}
 .check:hover{border-color:#fff;background:rgba(255,255,255,.1)}
 .check:checked{background:#fff;border-color:#fff}
 .check:checked::after{content:"";width:7px;height:13px;border:solid #222;border-width:0 2.4px 2.4px 0;transform:translateY(-1px) rotate(45deg)}
-.ttext{flex:1;min-width:0;font-size:22px;line-height:1.35;word-wrap:break-word;overflow-wrap:anywhere;cursor:default}
+.ttext{flex:1;min-width:0;font-size:22px;line-height:1.35;word-wrap:break-word;overflow-wrap:anywhere;white-space:pre-wrap;cursor:default}
+.ttext a{color:inherit;text-decoration:underline;text-decoration-color:rgba(255,255,255,.45);text-underline-offset:3px;cursor:pointer}
+.ttext a:hover{text-decoration-color:#fff}
+.task.multi{align-items:flex-start}
+.task.multi .check{margin-top:2px}
+.task.multi .grip,.task.multi .badge{margin-top:4px}
+.task.multi .actions{margin-top:-3px}
 .task.done .ttext{text-decoration:line-through;text-decoration-color:rgba(255,255,255,.5);color:var(--text-faint)}
-.edit-input{flex:1;min-width:0;font-size:22px;padding:4px 10px;margin:-5px 0;border-radius:8px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.4);outline:none}
+.edit-input{flex:1;min-width:0;font-size:22px;line-height:1.35;resize:none;display:block;padding:4px 10px;margin:-5px 0;border-radius:8px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.4);outline:none}
 .badge{flex:none;font-size:15px;padding:3px 10px;border-radius:999px;background:rgba(255,255,255,.14);color:var(--text-dim);white-space:nowrap}
 .actions{display:flex;align-items:center;gap:4px;opacity:0;transition:opacity .12s}
 .task:hover .actions,.task:focus-within .actions,.task:focus .actions,.task.editing .actions{opacity:1}
@@ -184,7 +200,17 @@ body.docked .corner.right{display:none}
     </div>
     <div id="pills" role="tablist"></div>
     <div class="add-row">
-      <input id="newTask" type="text" autocomplete="off" placeholder="Add a task…">
+      <div class="add-box">
+        <textarea id="newTask" rows="1" autocomplete="off" placeholder="Add a task…"></textarea>
+        <button class="icon-btn link-btn" id="linkBtn" title="add a link (⌘K)">
+          <svg viewBox="0 0 24 24"><path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1 1"/><path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1-1"/></svg>
+        </button>
+      </div>
+      <div class="link-pop" id="linkPop" hidden>
+        <input id="linkName" autocomplete="off" placeholder="Link name">
+        <input id="linkUrl" autocomplete="off" placeholder="https://…">
+        <button class="btn primary" id="linkAdd">Add</button>
+      </div>
     </div>
     <div class="toolbar">
       <div class="seg" id="statusSeg">
@@ -198,7 +224,7 @@ body.docked .corner.right{display:none}
     <ul id="list"></ul>
     <div class="card-foot">
       <span id="countLabel"></span>
-      <span><kbd>⌥</kbd><kbd>↑</kbd><kbd>↓</kbd> reorder · dbl-click to edit</span>
+      <span><kbd>⇧</kbd><kbd>↵</kbd> new line · <kbd>⌘</kbd><kbd>K</kbd> link · <kbd>⌥</kbd><kbd>↑</kbd><kbd>↓</kbd> reorder · dbl-click to edit</span>
     </div>
   </section>
 </main>

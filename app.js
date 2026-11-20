@@ -52,6 +52,31 @@ const ICON_EDIT = '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14 6l4 4"/>';
 const ICON_X = '<path d="M6 6l12 12M18 6L6 18"/>';
 const catName = id => (S.cats.find(c => c.id === id) || {}).name;
 
+/* ---- links: [name](url) shows as "name"; bare URLs show as their host ---- */
+const LINK_RE = /\[([^\]\n]+)\]\(([^)\s]+)\)|\b((?:https?:\/\/|www\.)[^\s<]*[^\s<.,;:!?)\]'"])/gi;
+function safeUrl(u) {
+  if (/^(https?:|mailto:)/i.test(u)) return u;
+  if (/^[\w-]+(\.[\w-]+)+/.test(u)) return 'https://' + u;
+  return null;
+}
+function hostOf(u) { try { return new URL(u).hostname.replace(/^www\./, ''); } catch (e) { return u; } }
+function richText(node, text) {
+  let last = 0;
+  for (const m of text.matchAll(LINK_RE)) {
+    const href = safeUrl(m[2] || m[3]);
+    if (!href) continue;
+    if (m.index > last) node.append(text.slice(last, m.index));
+    const a = el('a', {href, target: '_blank', rel: 'noopener noreferrer', title: href, draggable: false,
+      textContent: m[1] || hostOf(href)});
+    a.addEventListener('dblclick', e => e.stopPropagation());
+    node.append(a);
+    last = m.index + m[0].length;
+  }
+  if (last < text.length) node.append(text.slice(last));
+  return node;
+}
+const autoGrow = ta => { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 2 + 'px'; };
+
 let toastTimer;
 function toast(msg) {
   const t = $('#toast'); t.textContent = msg; t.classList.add('show');
@@ -212,7 +237,7 @@ function render() {
   renderPills();
   document.querySelectorAll('#statusSeg button').forEach(b => b.classList.toggle('on', b.dataset.s === S.status));
   const inCat = S.cat !== 'all' ? catName(S.cat) : null;
-  $('#newTask').placeholder = inCat ? `Add to ${inCat}… (paste multiple lines to batch-add)` : 'Add a task… (paste multiple lines to batch-add)';
+  $('#newTask').placeholder = inCat ? `Add to ${inCat}…` : 'Add a task…';
   document.body.classList.toggle('docked', S.docked);
 
   const list = $('#list'); list.innerHTML = '';
@@ -240,10 +265,10 @@ function catSelect(t) {
 }
 
 function renderTask(t) {
-  const li = el('li', {class: 'task' + (t.done ? ' done' : ''), tabIndex: 0, draggable: true, dataset: {id: t.id}});
+  const li = el('li', {class: 'task' + (t.done ? ' done' : '') + (t.text.includes('\n') ? ' multi' : ''), tabIndex: 0, draggable: true, dataset: {id: t.id}});
   const cb = el('input', {type: 'checkbox', class: 'check', checked: t.done, title: 'mark done'});
   cb.addEventListener('change', () => { t.done = cb.checked; save(); setTimeout(() => { render(); }, t.done && S.status === 'active' ? 250 : 0); });
-  const text = el('span', {class: 'ttext', textContent: t.text});
+  const text = richText(el('span', {class: 'ttext'}), t.text);
   text.addEventListener('dblclick', () => startEdit(li, t));
 
   li.append(el('span', {class: 'grip', textContent: '⋮⋮', title: 'drag to reorder'}), cb, text);
@@ -267,7 +292,7 @@ function focusTask(id) {
 
 /* ================= Task CRUD ================= */
 function cleanLine(line) {
-  const m = line.match(/^\s*(?:[-*•+–]\s+)?(?:\[([ xX]?)\]\s*)?(?:\d+[.)]\s+)?(.*)$/);
+  const m = line.match(/^\s*(?:[-*•+–]\s+)?(?:\[([ xX]?)\]\s*)?(?:\d+[.)]\s+)?([\s\S]*)$/);
   return {text: (m ? m[2] : line).trim(), done: !!(m && m[1] && m[1].trim())};
 }
 function addTasks(lines) {
@@ -287,10 +312,11 @@ function deleteTask(id) {
 }
 function startEdit(li, t) {
   if (li.classList.contains('editing')) return;
-  li.classList.add('editing'); li.draggable = false;
+  li.classList.add('editing', 'multi'); li.draggable = false;
   const text = li.querySelector('.ttext');
-  const inp = el('input', {class: 'edit-input', value: t.text});
-  text.replaceWith(inp); inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length);
+  const inp = el('textarea', {class: 'edit-input', value: t.text, rows: 1});
+  text.replaceWith(inp); autoGrow(inp); inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length);
+  inp.addEventListener('input', () => autoGrow(inp));
   let done = false;
   const finish = ok => {
     if (done) return; done = true;
@@ -300,7 +326,7 @@ function startEdit(li, t) {
   };
   inp.addEventListener('keydown', e => {
     e.stopPropagation();
-    if (e.key === 'Enter') { e.preventDefault(); finish(true); }
+    if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); finish(true); }
     if (e.key === 'Escape') { e.preventDefault(); finish(false); }
   });
   inp.addEventListener('blur', () => setTimeout(() => {
@@ -417,23 +443,64 @@ document.addEventListener('keydown', e => {
 
 /* ================= Wiring ================= */
 const newTask = $('#newTask');
+newTask.addEventListener('input', () => autoGrow(newTask));
+let shiftHeld = false;
 newTask.addEventListener('keydown', e => {
-  if (e.key === 'Enter' && newTask.value.trim()) {
-    addTasks([newTask.value]); newTask.value = '';
-  } else if (e.key === 'ArrowDown') {
+  shiftHeld = e.shiftKey;
+  if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+    e.preventDefault();
+    if (newTask.value.trim()) { addTasks([newTask.value]); newTask.value = ''; autoGrow(newTask); }
+  } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+    e.preventDefault(); openLinkPop();
+  } else if (e.key === 'ArrowDown' && !newTask.value.slice(newTask.selectionEnd).includes('\n')) {
     const v = visibleTasks(); if (v.length) { e.preventDefault(); focusTask(v[0].id); }
   } else if (e.key === 'Escape') newTask.blur();
 });
+newTask.addEventListener('keyup', e => { shiftHeld = e.shiftKey; });
 newTask.addEventListener('paste', e => {
   const txt = (e.clipboardData || window.clipboardData).getData('text');
-  if (!/\r?\n/.test(txt.trim())) return; // single line → normal paste
+  if (shiftHeld || !/\r?\n/.test(txt.trim())) return; // single line, or ⌘⇧V → paste as one entry
   e.preventDefault();
   const lines = txt.split(/\r?\n/);
   if (newTask.value.trim()) lines.unshift(newTask.value);
-  const n = addTasks(lines); newTask.value = '';
+  const n = addTasks(lines); newTask.value = ''; autoGrow(newTask);
   const where = S.cat === 'all' ? '' : ` to ${catName(S.cat)}`;
   toast(`Added ${n} task${n === 1 ? '' : 's'}${where}`);
 });
+
+/* link popover: inserts [name](url) at the cursor */
+const linkPop = $('#linkPop'), linkName = $('#linkName'), linkUrl = $('#linkUrl'), linkBtn = $('#linkBtn');
+let linkSel = [0, 0];
+function openLinkPop() {
+  linkSel = [newTask.selectionStart, newTask.selectionEnd];
+  linkName.value = newTask.value.slice(...linkSel).trim();
+  linkUrl.value = '';
+  linkPop.hidden = false; linkBtn.classList.add('on');
+  (linkName.value ? linkUrl : linkName).focus();
+}
+function closeLinkPop(refocus) {
+  linkPop.hidden = true; linkBtn.classList.remove('on');
+  if (refocus) newTask.focus();
+}
+function insertLink() {
+  const url = linkUrl.value.trim().replace(/\s/g, '%20').replace(/\)/g, '%29');
+  if (!url) return linkUrl.focus();
+  const name = linkName.value.replace(/[\[\]\n]/g, ' ').trim();
+  const md = name ? `[${name}](${url})` : url;
+  const v = newTask.value, [a, b] = linkSel;
+  const pre = v.slice(0, a), post = v.slice(b);
+  const pad = pre && !/\s$/.test(pre) ? ' ' : '';
+  newTask.value = pre + pad + md + (post && !/^\s/.test(post) ? ' ' : '') + post;
+  const caret = (pre + pad + md).length;
+  closeLinkPop(true); newTask.setSelectionRange(caret, caret); autoGrow(newTask);
+}
+linkBtn.addEventListener('mousedown', e => e.preventDefault()); // keep the textarea selection
+linkBtn.addEventListener('click', () => linkPop.hidden ? openLinkPop() : closeLinkPop(true));
+[linkName, linkUrl].forEach(i => i.addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); insertLink(); }
+  else if (e.key === 'Escape') { e.preventDefault(); closeLinkPop(true); }
+}));
+$('#linkAdd').addEventListener('click', insertLink);
 
 $('#statusSeg').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
@@ -454,8 +521,8 @@ $('#copyBtn').addEventListener('click', async () => {
     vis.forEach(t => { const k = t.cat || ''; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(t); });
     const order = [...S.cats.map(c => c.id), ''].filter(k => groups.has(k));
     md = order.map(k => (groups.size > 1 || k ? `### ${k ? catName(k) : 'Uncategorized'}\n` : '') +
-      groups.get(k).map(t => `- [${t.done ? 'x' : ' '}] ${t.text}`).join('\n')).join('\n\n');
-  } else md = vis.map(t => `- [${t.done ? 'x' : ' '}] ${t.text}`).join('\n');
+      groups.get(k).map(t => `- [${t.done ? 'x' : ' '}] ${t.text.replace(/\n/g, '\n  ')}`).join('\n')).join('\n\n');
+  } else md = vis.map(t => `- [${t.done ? 'x' : ' '}] ${t.text.replace(/\n/g, '\n  ')}`).join('\n');
   toast(await copyText(md) ? `Copied ${vis.length} task${vis.length === 1 ? '' : 's'} as Markdown` : 'Copy failed');
 });
 $('#catsBtn').addEventListener('click', () => { renderCatRows(); openModal('#catsModal'); });
