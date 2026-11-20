@@ -6,12 +6,14 @@ const KEY = 'summit-sidebar-v1';
 const CACHE = 'summit-sidebar-cache-v1';
 const read = k => { try { return JSON.parse(localStorage.getItem(k)) || {}; } catch (e) { return {}; } };
 const write = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
-const P = Object.assign({open: false, unit: 'c', loc: null}, read(KEY)); // loc: {lat, lon, name}
+const DEFAULT_STOCKS = [{sym: 'TSLA', name: 'Tesla'}, {sym: 'SPCX', name: 'SpaceX'}];
+const P = Object.assign({open: false, unit: 'c', loc: null, stocks: DEFAULT_STOCKS}, read(KEY)); // loc: {lat, lon, name}
+if (!Array.isArray(P.stocks)) P.stocks = DEFAULT_STOCKS;
 const C = read(CACHE);                                                   // {wx: {at, key, data}}
 const saveP = () => write(KEY, P);
 const saveC = () => write(CACHE, C);
 
-const STOCKS = [{sym: 'TSLA', name: 'Tesla'}, {sym: 'SPCX', name: 'SpaceX'}];
+const MAX_STOCKS = 8;
 const WX_TTL = 30 * 60e3, STK_EVERY = 60e3;
 
 const $ = s => document.querySelector(s);
@@ -191,7 +193,7 @@ async function quote(sym) {
       if (!r.ok) throw new Error(r.status);
       const res = (await r.json()).chart.result[0];
       return {
-        price: res.meta.regularMarketPrice,
+        price: res.meta.regularMarketPrice, currency: res.meta.currency || 'USD',
         prev: res.meta.chartPreviousClose ?? res.meta.previousClose,
         time: res.meta.regularMarketTime,
         period: res.meta.currentTradingPeriod.regular,
@@ -217,30 +219,106 @@ function spark(q) {
       points="${pts.map(p => `${x(p[0]).toFixed(1)},${y(p[1]).toFixed(1)}`).join(' ')}"/></svg>`;
 }
 
-let stkTimer;
+const money = (v, cur) => {
+  try { return new Intl.NumberFormat(undefined, {style: 'currency', currency: cur, currencyDisplay: 'narrowSymbol', minimumFractionDigits: 2, maximumFractionDigits: 2}).format(v); }
+  catch (e) { return v.toFixed(2); }
+};
+const stockBox = $('#stocks');
+let stkTimer, lastResults = [], editing = false;
+
 async function loadStocks() {
   clearTimeout(stkTimer);
-  const results = await Promise.all(STOCKS.map(s => quote(s.sym).then(q => ({s, q}), () => ({s}))));
-  const box = $('#stocks');
-  if (results.every(r => !r.q)) {
-    box.innerHTML = '<div class="sb-msg">quotes unavailable · <button id="stkRetry">retry</button></div>';
-    $('#stkRetry').addEventListener('click', loadStocks);
-  } else {
-    const nowS = Date.now() / 1000;
-    const open = results.some(r => r.q && nowS >= r.q.period.start && nowS < r.q.period.end);
-    const latest = Math.max(...results.filter(r => r.q).map(r => r.q.time));
-    box.innerHTML = results.map(({s, q}) => {
-      if (!q) return `<div class="stk"><div><div class="nm">${esc(s.name)}</div><div class="sym">${s.sym}</div></div><span></span><div class="px">—</div></div>`;
-      const ch = q.price - q.prev, pct = ch / q.prev * 100, cls = ch >= 0 ? 'up' : 'dn', sign = ch >= 0 ? '+' : '−';
-      return `<div class="stk" title="previous close $${q.prev.toFixed(2)}">
-        <div><div class="nm">${esc(s.name)}</div><div class="sym">${s.sym}</div></div>
-        ${spark(q)}
-        <div><div class="px">$${q.price.toFixed(2)}</div><div class="ch ${cls}">${sign}${Math.abs(ch).toFixed(2)} (${sign}${Math.abs(pct).toFixed(2)}%)</div></div>
-      </div>`;
-    }).join('') + `<div class="stk-foot">${open ? 'live · ' : 'market closed · '}as of ${
-      new Date(latest * 1000).toLocaleString(undefined, {weekday: open ? undefined : 'short', hour: 'numeric', minute: '2-digit'})}</div>`;
-  }
+  lastResults = await Promise.all(P.stocks.map(s => quote(s.sym).then(q => ({s, q}), () => ({s}))));
+  renderStocks();
   if (P.open && !document.hidden) stkTimer = setTimeout(loadStocks, STK_EVERY);
+}
+
+function renderStocks() {
+  const results = P.stocks.map(s => lastResults.find(r => r.s.sym === s.sym) || {s});
+  const parts = [];
+  if (!P.stocks.length) parts.push('<div class="sb-msg">no stocks yet — click edit to add one</div>');
+  else if (!editing && results.length && results.every(r => !r.q)) parts.push('<div class="sb-msg">quotes unavailable · <button data-act="retry">retry</button></div>');
+  else {
+    parts.push(results.map(({s, q}) => {
+      const label = `<div><div class="nm">${esc(s.name)}</div><div class="sym">${esc(s.sym)}</div></div>`;
+      const rm = editing ? `<button class="icon-btn stk-rm" data-rm="${esc(s.sym)}" title="remove ${esc(s.sym)}"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>` : '';
+      if (!q) return `<div class="stk">${label}<span></span><div class="px">—</div>${rm}</div>`;
+      const ch = q.price - q.prev, pct = ch / q.prev * 100, cls = ch >= 0 ? 'up' : 'dn', sign = ch >= 0 ? '+' : '−';
+      return `<div class="stk${editing ? ' editing' : ''}" title="previous close ${money(q.prev, q.currency)}">
+        ${label}${spark(q)}
+        <div><div class="px">${money(q.price, q.currency)}</div><div class="ch ${cls}">${sign}${Math.abs(ch).toFixed(2)} (${sign}${Math.abs(pct).toFixed(2)}%)</div></div>
+        ${rm}</div>`;
+    }).join(''));
+    const ok = results.filter(r => r.q);
+    if (!editing && ok.length) {
+      const nowS = Date.now() / 1000;
+      const open = ok.some(r => nowS >= r.q.period.start && nowS < r.q.period.end);
+      const latest = Math.max(...ok.map(r => r.q.time));
+      parts.push(`<div class="stk-foot">${open ? 'live · ' : 'market closed · '}as of ${
+        new Date(latest * 1000).toLocaleString(undefined, {weekday: open ? undefined : 'short', hour: 'numeric', minute: '2-digit'})}</div>`);
+    }
+  }
+  if (editing) parts.push(P.stocks.length >= MAX_STOCKS
+    ? `<div class="sb-msg">that’s the max of ${MAX_STOCKS} — remove one to add another</div>`
+    : `<div class="stk-add"><input id="stkQ" placeholder="add a stock — name or ticker" autocomplete="off" spellcheck="false"><div id="stkHits" class="stk-hits"></div></div>`);
+  stockBox.innerHTML = parts.join('');
+  $('#stkEdit').textContent = editing ? 'done' : 'edit';
+  if (editing && $('#stkQ')) wireSearch($('#stkQ'));
+}
+
+stockBox.addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.act === 'retry') loadStocks();
+  if (b.dataset.rm) { P.stocks = P.stocks.filter(s => s.sym !== b.dataset.rm); saveP(); renderStocks(); }
+  if (b.dataset.add) addStock({sym: b.dataset.add, name: b.dataset.name});
+});
+$('#stkEdit').addEventListener('click', () => {
+  editing = !editing; renderStocks();
+  if (editing && $('#stkQ')) $('#stkQ').focus();
+  if (!editing) loadStocks();
+});
+
+/* ---- ticker search ---- */
+const cleanName = n => n.trim().replace(/,?\s+(inc\.?|corp\.?|corporation|ltd\.?|plc|co\.|company|holdings?)$/i, '').trim();
+async function searchTickers(q) {
+  const r = await fetch(`https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(q)}&quotesCount=8&newsCount=0&listsCount=0`);
+  const d = await r.json();
+  return (d.quotes || [])
+    .filter(x => x.symbol && ['EQUITY', 'ETF', 'INDEX', 'MUTUALFUND', 'CRYPTOCURRENCY'].includes(x.quoteType))
+    .slice(0, 6)
+    .map(x => ({sym: x.symbol, name: cleanName(x.shortname || x.longname || x.symbol), exch: x.exchDisp || ''}));
+}
+function wireSearch(inp) {
+  const hits = $('#stkHits');
+  let t, seq = 0, list = [];
+  inp.addEventListener('input', () => {
+    clearTimeout(t);
+    const q = inp.value.trim();
+    if (!q) { hits.innerHTML = ''; list = []; return; }
+    t = setTimeout(async () => {
+      const my = ++seq;
+      try { list = await searchTickers(q); } catch (e) { list = []; }
+      if (my !== seq) return;
+      hits.innerHTML = list.length ? list.map(x => {
+        const have = P.stocks.some(s => s.sym === x.sym);
+        return `<button data-add="${esc(x.sym)}" data-name="${esc(x.name)}" ${have ? 'disabled' : ''}>
+          <span class="sym">${esc(x.sym)}</span><span class="nm">${esc(x.name)}</span><span class="ex">${have ? 'added' : esc(x.exch)}</span></button>`;
+      }).join('') : '<div class="sb-msg">no matches</div>';
+    }, 250);
+  });
+  inp.addEventListener('keydown', e => {
+    e.stopPropagation();
+    if (e.key === 'Enter') { const x = list.find(x => !P.stocks.some(s => s.sym === x.sym)); if (x) addStock(x); }
+    if (e.key === 'Escape') { editing = false; renderStocks(); loadStocks(); }
+  });
+}
+async function addStock(x) {
+  if (P.stocks.some(s => s.sym === x.sym) || P.stocks.length >= MAX_STOCKS) return;
+  P.stocks.push({sym: x.sym, name: x.name}); saveP();
+  const q = await quote(x.sym).catch(() => null);
+  lastResults = lastResults.filter(r => r.s.sym !== x.sym).concat([{s: {sym: x.sym, name: x.name}, ...(q ? {q} : {})}]);
+  renderStocks();
+  if ($('#stkQ')) $('#stkQ').focus();
 }
 
 /* ================= Refresh ================= */
