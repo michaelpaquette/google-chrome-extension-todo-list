@@ -149,6 +149,7 @@ kbd{font-family:inherit;font-size:13px;padding:1px 5px;border-radius:4px;backgro
 .corner.left{left:14px}.corner.right{right:14px}
 body.docked .corner.right{display:none}
 .corner button{display:flex;align-items:center;gap:7px;padding:7px 12px;border-radius:999px;font-size:15.5px;color:var(--text-dim);background:rgba(0,0,0,.22);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.12)}
+.corner button.on{color:var(--text);background:rgba(255,255,255,.18)}
 .corner button:hover{color:var(--text);background:rgba(0,0,0,.35)}
 .corner svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 
@@ -169,6 +170,78 @@ body.docked .corner.right{display:none}
 .cat-row input{flex:1;padding:8px 12px;border-radius:9px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);outline:none}
 .cat-row input:focus{border-color:rgba(255,255,255,.4)}
 .cat-row .count{font-size:14.5px;color:var(--text-faint);width:56px;text-align:right}
+
+/* ---------- Sidebar ---------- */
+#sidebar{
+  position:fixed;z-index:4;top:20px;bottom:64px;left:20px;width:340px;
+  display:flex;flex-direction:column;gap:6px;padding:16px 16px 18px;overflow-y:auto;scrollbar-width:none;
+  background:var(--glass);border:1px solid var(--glass-border);border-radius:var(--radius);
+  backdrop-filter:blur(22px) saturate(140%);-webkit-backdrop-filter:blur(22px) saturate(140%);
+  box-shadow:0 20px 60px rgba(0,0,0,.25);
+  transform:translateX(calc(-100% - 40px));opacity:0;transition:transform .35s ease,opacity .35s ease;
+}
+#sidebar::-webkit-scrollbar{display:none}
+#sidebar>*{flex:none}
+.sb-locform[hidden]{display:none}
+body.sb-open #sidebar{transform:none;opacity:1}
+body.sb-open #app{padding-left:384px}
+@media (max-width:1000px){
+  body.sb-open #app{padding-left:24px}
+  #sidebar{box-shadow:0 20px 80px rgba(0,0,0,.5);background:var(--glass-strong)}
+}
+.sb-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:-4px -6px 2px 0}
+.sb-loc{display:flex;align-items:center;gap:6px;min-width:0;padding:6px 10px;margin-left:-10px;border-radius:9px;font-size:16px;color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sb-loc:hover{background:var(--hover);color:var(--text)}
+.sb-loc svg{width:16px;height:16px;flex:none;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.sb-head .icon-btn{width:36px;height:36px}
+.sb-head .icon-btn svg{width:19px;height:19px}
+.sb-locform{display:flex;flex-direction:column;gap:8px;margin-bottom:6px}
+.sb-locform input{padding:9px 12px;border-radius:10px;font-size:16px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);outline:none}
+.sb-locform input:focus{border-color:rgba(255,255,255,.4)}
+.sb-locform .row{display:flex;gap:8px}
+.sb-locform .btn{font-size:15px;padding:7px 12px}
+.sb-label{font-size:13.5px;letter-spacing:.06em;color:var(--text-faint);margin:12px 0 4px}
+.sb-msg{color:var(--text-faint);font-size:15.5px;padding:8px 0}
+.sb-msg button{text-decoration:underline;color:var(--text-dim)}
+.sb-sep{height:1px;background:rgba(255,255,255,.1);margin:16px 0 2px}
+
+.wx-now{display:flex;align-items:center;gap:14px}
+.wx-temp{font-size:64px;font-weight:200;line-height:1;letter-spacing:-.03em;cursor:pointer;font-variant-numeric:tabular-nums}
+.wx-temp sup{text-transform:none;font-size:.4em;font-weight:300;vertical-align:.95em;margin-left:2px;color:var(--text-dim)}
+.wx-big-ico{font-size:44px;line-height:1}
+.wx-cond{font-size:17px;color:var(--text-dim);margin-top:6px}
+.wx-cond b{font-weight:500;color:var(--text)}
+.wx-slots{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.wx-slot{display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 4px;border-radius:12px;background:rgba(255,255,255,.07)}
+.wx-slot .t{font-size:13.5px;color:var(--text-faint)}
+.wx-slot .i{font-size:22px;line-height:1.1}
+.wx-slot .v{font-size:18px;font-variant-numeric:tabular-nums}
+.wx-tmrw{padding:12px 14px;border-radius:14px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.1)}
+.wx-tmrw .top{display:flex;align-items:center;gap:12px}
+.wx-tmrw .i{font-size:36px;line-height:1}
+.wx-tmrw .hl{font-size:26px;font-weight:300;font-variant-numeric:tabular-nums}
+.wx-tmrw .hl span{color:var(--text-faint);font-size:.75em;margin-left:6px}
+.wx-tmrw .c{font-size:15.5px;color:var(--text-dim)}
+.wx-tmrw .parts{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.1)}
+.wx-tmrw .parts div{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:16px;font-variant-numeric:tabular-nums}
+.wx-tmrw .parts small{font-size:13px;color:var(--text-faint)}
+.wx-week{opacity:.7;transition:opacity .2s}
+.wx-week:hover{opacity:1}
+.wx-day{display:grid;grid-template-columns:44px 26px 1fr auto;align-items:center;gap:8px;padding:1px 2px;font-size:15px;color:var(--text-dim);font-variant-numeric:tabular-nums}
+.wx-day .i{font-size:16px;text-align:center}
+.wx-day .bar{height:4px;border-radius:2px;background:rgba(255,255,255,.12);position:relative}
+.wx-day .bar i{position:absolute;top:0;bottom:0;border-radius:2px;background:linear-gradient(90deg,#9fd0ff,#ffd59a)}
+.wx-day .r{min-width:62px;text-align:right}
+
+.stk{display:grid;grid-template-columns:1fr 92px auto;align-items:center;gap:10px;padding:10px 4px;border-radius:10px}
+.stk + .stk{border-top:1px solid rgba(255,255,255,.07)}
+.stk .nm{font-size:17px}
+.stk .sym{font-size:13px;color:var(--text-faint);text-transform:none;letter-spacing:.04em}
+.stk .px{text-align:right;font-size:18px;font-variant-numeric:tabular-nums}
+.stk .ch{font-size:14px;font-variant-numeric:tabular-nums}
+.stk .up{color:#8ee6a8}.stk .dn{color:#ffa3a3}
+.stk svg{width:92px;height:32px;overflow:visible}
+.stk-foot{font-size:12.5px;color:var(--text-faint);margin-top:4px}
 
 /* toast */
 #toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,20px);z-index:20;padding:9px 16px;border-radius:999px;background:rgba(15,16,22,.8);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);font-size:16px;opacity:0;pointer-events:none;transition:all .25s ease}
@@ -230,6 +303,10 @@ body.docked .corner.right{display:none}
 </main>
 
 <div class="corner left">
+  <button id="sbBtn" title="weather & stocks ( [ )">
+    <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/></svg>
+    <span id="sbBtnLabel">Weather</span>
+  </button>
   <button id="themeBtn" title="next background">
     <svg viewBox="0 0 24 24"><path d="M3 18l5-7 4 5 3-4 6 6z"/><circle cx="16" cy="7" r="2"/></svg>
     <span id="themeName">Theme</span>
@@ -239,6 +316,27 @@ body.docked .corner.right{display:none}
     Backup
   </button>
 </div>
+
+<aside id="sidebar" aria-label="Weather and stocks">
+  <div class="sb-head">
+    <button class="sb-loc" id="sbLoc" title="change location">
+      <svg viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
+      <span id="sbLocName">locating…</span>
+    </button>
+    <button class="icon-btn" id="sbClose" title="close ( [ )"><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button>
+  </div>
+  <div id="sbLocForm" class="sb-locform" hidden>
+    <input id="sbCity" placeholder="City name" autocomplete="off">
+    <div class="row">
+      <button class="btn primary" id="sbCityGo">Set</button>
+      <button class="btn" id="sbUseGeo">Use my location</button>
+    </div>
+  </div>
+  <section id="wx"><div class="sb-msg">loading weather…</div></section>
+  <div class="sb-sep"></div>
+  <div class="sb-label">stocks</div>
+  <section id="stocks"><div class="sb-msg">loading…</div></section>
+</aside>
 
 <!-- Categories modal -->
 <div class="modal-bg" id="catsModal">
@@ -273,4 +371,5 @@ body.docked .corner.right{display:none}
 <div id="toast" role="status" aria-live="polite"></div>
 
 <script src="app.js"></script>
+<script src="sidebar.js"></script>
 </body>
