@@ -25,7 +25,7 @@ No accounts, no network requests: everything is stored locally in your browser.
 4. Click **Load unpacked** and select the repository folder.
 5. Open a new tab.
 
-Clicking the extension's toolbar icon also opens the list in a new tab.
+Clicking the extension's toolbar icon also opens the list in a new tab. To switch back to another new tab page (Momentum, say), right-click the icon and choose **Disable summit…**: it opens summit's entry in `chrome://extensions`, where you flip the toggle off (and back on later). Your tasks are kept while it's disabled.
 
 ## Keyboard shortcuts
 
@@ -53,7 +53,7 @@ Add `?hour=` to the page URL to preview the automatic background at a given hour
 | `manifest.json` | Extension manifest (Manifest V3) |
 | `newtab.html` | New tab page: markup and styles |
 | `app.js` | All app logic: tasks, categories, scenes, clock, backup |
-| `background.js` | Opens the page when the toolbar icon is clicked |
+| `background.js` | Toolbar icon: opens the page on click, adds the Disable menu item |
 | `icons/` | Extension icons |
 
 ## Privacy
