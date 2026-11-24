@@ -47,7 +47,9 @@ Tasks can also be reordered by drag and drop.
 
 ## Daily brief
 
-Write Markdown to `summary.md` in the extension's folder (the one you loaded with **Load unpacked**) and it shows up in the **Brief** panel on the next new tab, with no reload needed. The file is gitignored. Headings, paragraphs, bold/italic, links, inline code and code blocks, block quotes, nested lists, `- [ ]` / `- [x]` checklists, tables and horizontal rules are supported.
+Write Markdown to `summary.md` in the extension's folder (the one you loaded with **Load unpacked**) and it shows up in the **Brief** panel on the next new tab, with no reload needed. The file is gitignored.
+
+From 8 am each day, the first new tab that finds an unread summary opens the Brief by itself, once per day. Tabs that are already open check every minute, so a summary written at 8:00 pops up within a minute. It won't open if you haven't written a new summary, or if you already read it. Headings, paragraphs, bold/italic, links, inline code and code blocks, block quotes, nested lists, `- [ ]` / `- [x]` checklists, tables and horizontal rules are supported.
 
 ## Preview a time of day
 

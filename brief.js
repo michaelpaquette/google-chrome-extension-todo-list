@@ -7,6 +7,8 @@
 
 const FILE = 'summary.md';
 const SEEN = 'summit-brief-seen-v1';
+const AUTO = 'summit-brief-auto-v1';   // date the brief last opened itself
+const AUTO_HOUR = 8;                   // open automatically from 8 am onward
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'})[c]);
 const hash = s => { let h = 5381; for (let i = 0; i < s.length; i++) h = (h * 33 ^ s.charCodeAt(i)) >>> 0; return h.toString(36); };
@@ -88,6 +90,19 @@ function md(src) {
 const modal = $('#briefModal'), body = $('#briefBody'), btn = $('#briefBtn');
 let text = null;
 
+const today = () => new Date().toLocaleDateString('en-CA');
+
+// From 8 am, the first time a visible new tab sees an unread summary, open it — once per day.
+function maybeAutoOpen() {
+  if (document.hidden || text == null || modal.classList.contains('open')) return;
+  if (new Date().getHours() < AUTO_HOUR || localStorage.getItem(AUTO) === today()) return;
+  if (localStorage.getItem(SEEN) === hash(text) || document.querySelector('.modal-bg.open')) return;
+  const a = document.activeElement || {};
+  if (['INPUT', 'TEXTAREA', 'SELECT'].includes(a.tagName) && a.value) return; // don't interrupt typing
+  localStorage.setItem(AUTO, today());
+  show();
+}
+
 async function load() {
   try {
     const r = await fetch(`${FILE}?t=${Date.now()}`, {cache: 'no-store'});
@@ -95,7 +110,7 @@ async function load() {
   } catch (e) { text = null; }
   if (text != null && !text.trim()) text = null;
   btn.classList.toggle('new', text != null && localStorage.getItem(SEEN) !== hash(text));
-  if (modal.classList.contains('open')) render();
+  if (modal.classList.contains('open')) render(); else maybeAutoOpen();
 }
 
 function render() {
@@ -109,12 +124,12 @@ function render() {
   body.scrollTop = 0;
 }
 
-async function open() {
-  await load();
+function show() {
   render();
   modal.classList.add('open');
   modal.querySelector('.modal').focus();
 }
+async function open() { await load(); show(); }
 
 btn.addEventListener('click', open);
 $('#briefReload').addEventListener('click', async () => { await load(); render(); });
@@ -125,6 +140,7 @@ document.addEventListener('keydown', e => {
   e.preventDefault(); open();
 });
 document.addEventListener('visibilitychange', () => { if (!document.hidden) load(); });
+setInterval(() => { if (!document.hidden) load(); }, 60e3); // picks up the morning file in an already-open tab
 
 load();
 })();
