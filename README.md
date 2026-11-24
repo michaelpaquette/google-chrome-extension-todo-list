@@ -15,6 +15,7 @@ No accounts, no network requests: everything is stored locally in your browser.
 - **Scenic backgrounds**: by default the scene follows the time of day, blending through night, dawn, morning, midday, afternoon, golden hour and dusk. Or pick a fixed theme: Dawn, Alpine, Forest, Dusk, Night, Desert or Ocean.
 - **Dock to the side** or keep the list centered.
 - **Backup and restore**: copy or download your data as JSON, and restore it from a file or pasted JSON.
+- **Daily brief**: click **Brief** (or press `]`) to read `summary.md` from the extension folder, rendered as Markdown. A dot on the button means it changed since you last read it. Meant for a scheduled job (e.g. Claude) that writes a fresh summary each morning; see [Daily brief](#daily-brief).
 - **Syncs across open tabs**: changes made in one new tab show up in the others.
 
 ## Install
@@ -38,9 +39,15 @@ Clicking the extension's toolbar icon also opens the list in a new tab. To switc
 | `Space` | Mark the focused task done or not done |
 | `Enter` or `F2` | Edit the focused task |
 | `Delete` / `Backspace` | Delete the focused task |
+| `[` | Toggle the weather & stocks sidebar |
+| `]` | Open the daily brief |
 | `Esc` | Cancel editing or close a panel |
 
 Tasks can also be reordered by drag and drop.
+
+## Daily brief
+
+Write Markdown to `summary.md` in the extension's folder (the one you loaded with **Load unpacked**) and it shows up in the **Brief** panel on the next new tab, with no reload needed. The file is gitignored. Headings, paragraphs, bold/italic, links, inline code and code blocks, block quotes, nested lists, `- [ ]` / `- [x]` checklists, tables and horizontal rules are supported.
 
 ## Preview a time of day
 
@@ -53,6 +60,7 @@ Add `?hour=` to the page URL to preview the automatic background at a given hour
 | `manifest.json` | Extension manifest (Manifest V3) |
 | `newtab.html` | New tab page: markup and styles |
 | `app.js` | All app logic: tasks, categories, scenes, clock, backup |
+| `brief.js` | Daily brief panel: loads and renders `summary.md` |
 | `background.js` | Toolbar icon: opens the page on click, adds the Disable menu item |
 | `icons/` | Extension icons |
 

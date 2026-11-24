@@ -262,6 +262,39 @@ body.sb-open #app{padding-left:384px}
 .stk-hits .ex{font-size:12.5px;color:var(--text-faint)}
 .stk-foot{font-size:12.5px;color:var(--text-faint);margin-top:4px}
 
+/* daily brief */
+#briefBtn{position:relative}
+#briefBtn.new::after{content:"";position:absolute;top:5px;right:6px;width:8px;height:8px;border-radius:50%;background:#ffd59a;box-shadow:0 0 0 2px rgba(0,0,0,.25)}
+.modal.brief{width:min(860px,100%);height:min(86vh,1000px);display:flex;flex-direction:column;padding:18px 0 0;outline:none}
+.modal.brief h2{padding:0 20px 10px;border-bottom:1px solid rgba(255,255,255,.1);margin:0}
+.modal.brief h2 .acts{display:flex;gap:4px}
+#briefBody{flex:1;overflow-y:auto;padding:8px 32px 32px;text-transform:none;font-size:17.5px;line-height:1.6;color:rgba(255,255,255,.92)}
+#briefBody h1,#briefBody h2,#briefBody h3,#briefBody h4{display:block;padding:0;border:0;line-height:1.25;font-weight:600;color:#fff}
+#briefBody h1{font-size:30px;margin:22px 0 10px}
+#briefBody h2{font-size:23px;margin:26px 0 8px}
+#briefBody h3{font-size:19px;margin:20px 0 6px}
+#briefBody h4{font-size:17px;margin:16px 0 4px;color:var(--text-dim)}
+#briefBody p{margin:0 0 12px;color:inherit;font-size:inherit}
+#briefBody ul,#briefBody ol{margin:0 0 12px;padding-left:24px}
+#briefBody li{margin:3px 0}
+#briefBody li>ul,#briefBody li>ol{margin:4px 0}
+#briefBody li.task-item{list-style:none;display:flex;gap:10px;align-items:flex-start;margin-left:-24px}
+#briefBody .cb{flex:none;width:17px;height:17px;margin-top:5px;border-radius:50%;border:1.6px solid rgba(255,255,255,.6)}
+#briefBody .cb.on{background:#fff;border-color:#fff}
+#briefBody .cb.on+span{text-decoration:line-through;color:var(--text-faint)}
+#briefBody a{color:#cfe6ff;text-underline-offset:3px}
+#briefBody code{font:.88em ui-monospace,SFMono-Regular,Menlo,monospace;padding:1px 5px;border-radius:5px;background:rgba(0,0,0,.3)}
+#briefBody pre{margin:0 0 12px;padding:12px 14px;border-radius:10px;background:rgba(0,0,0,.32);overflow-x:auto}
+#briefBody pre code{padding:0;background:none;font-size:14px}
+#briefBody blockquote{margin:0 0 12px;padding:2px 0 2px 14px;border-left:3px solid rgba(255,255,255,.3);color:var(--text-dim)}
+#briefBody hr{border:0;height:1px;background:rgba(255,255,255,.15);margin:20px 0}
+#briefBody img{max-width:100%;border-radius:8px}
+#briefBody .tbl{overflow-x:auto;margin:0 0 12px}
+#briefBody table{border-collapse:collapse;font-size:15.5px}
+#briefBody th,#briefBody td{padding:6px 12px;border-bottom:1px solid rgba(255,255,255,.12);text-align:left}
+#briefBody th{font-weight:600;color:var(--text-dim)}
+.brief-empty{padding:60px 20px;text-align:center;color:var(--text-faint)}
+
 /* toast */
 #toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,20px);z-index:20;padding:9px 16px;border-radius:999px;background:rgba(15,16,22,.8);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);font-size:16px;opacity:0;pointer-events:none;transition:all .25s ease}
 #toast.show{opacity:1;transform:translate(-50%,0)}
@@ -326,6 +359,10 @@ body.sb-open #app{padding-left:384px}
     <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/></svg>
     <span id="sbBtnLabel">Weather</span>
   </button>
+  <button id="briefBtn" title="daily brief ( ] )">
+    <svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 12h7M9 16h5"/></svg>
+    Brief
+  </button>
   <button id="themeBtn" title="next background">
     <svg viewBox="0 0 24 24"><path d="M3 18l5-7 4 5 3-4 6 6z"/><circle cx="16" cy="7" r="2"/></svg>
     <span id="themeName">Theme</span>
@@ -387,8 +424,20 @@ body.sb-open #app{padding-left:384px}
   </div>
 </div>
 
+<!-- Daily brief modal -->
+<div class="modal-bg" id="briefModal">
+  <div class="modal brief" role="dialog" aria-modal="true" aria-labelledby="briefTitle" tabindex="-1">
+    <h2><span id="briefTitle">Daily brief</span><span class="acts">
+      <button class="icon-btn" id="briefReload" title="reload"><svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></svg></button>
+      <button class="icon-btn" data-close title="close (esc)"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </span></h2>
+    <div id="briefBody"></div>
+  </div>
+</div>
+
 <div id="toast" role="status" aria-live="polite"></div>
 
 <script src="app.js"></script>
 <script src="sidebar.js"></script>
+<script src="brief.js"></script>
 </body>
