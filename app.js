@@ -564,7 +564,7 @@ $('#bRestore').addEventListener('click', () => {
   const data = parsed && parsed.data ? parsed.data : parsed;
   if (!data || !Array.isArray(data.tasks)) return toast('No tasks found in that backup');
   if (!confirm(`replace all current data with this backup (${data.tasks.length} tasks)?`)) return;
-  S = normalize(data); save(); nameEl.textContent = S.name;
+  S = normalize(data); save();
   renderScene(); tick(); render(); closeModals(); toast('Backup restored');
 });
 
@@ -572,7 +572,7 @@ $('#bRestore').addEventListener('click', () => {
 window.addEventListener('storage', e => {
   if (e.key !== KEY) return;
   if (document.querySelector('.task.editing')) return;
-  S = load(); nameEl.textContent = S.name; renderScene(); tick(); render();
+  S = load(); renderScene(); tick(); render();
 });
 
 /* ================= Boot ================= */
