@@ -615,6 +615,34 @@ $('#themeBtn').addEventListener('click', () => {
 });
 $('#clock').addEventListener('click', () => { S.h24 = !S.h24; save(); tick(); });
 
+/* clean view: card and panels slide out, only the scene stays (not saved: a new tab starts normal) */
+let idleTimer = 0;
+function setClean(on) {
+  document.body.classList.toggle('clean', on);
+  document.body.classList.remove('idle');
+  $('#cleanLabel').textContent = on ? 'Show' : 'Clean';
+  $('#cleanBtn').title = on ? 'bring everything back ( \\ or esc )' : 'clean view: show only the background ( \\ )';
+  $('#cleanBtn').classList.toggle('on', on);
+  if (on && document.activeElement) document.activeElement.blur();
+  clearTimeout(idleTimer);
+  if (on) idleTimer = setTimeout(() => document.body.classList.add('idle'), 2500);
+}
+$('#cleanBtn').addEventListener('click', () => setClean(!document.body.classList.contains('clean')));
+document.addEventListener('mousemove', () => {
+  if (!document.body.classList.contains('clean')) return;
+  document.body.classList.remove('idle');
+  clearTimeout(idleTimer);
+  idleTimer = setTimeout(() => document.body.classList.add('idle'), 2500);
+});
+document.addEventListener('keydown', e => {
+  const a = document.activeElement || {};
+  if (e.metaKey || e.ctrlKey || e.altKey || document.querySelector('.modal-bg.open')) return;
+  if (['INPUT', 'TEXTAREA', 'SELECT'].includes(a.tagName) || a.isContentEditable) return;
+  const clean = document.body.classList.contains('clean');
+  if (e.key === '\\' || (clean && e.key === 'Escape')) { e.preventDefault(); e.stopImmediatePropagation(); setClean(!clean); }
+  else if (clean && ['[', ']', '/', 'n'].includes(e.key)) { setClean(false); } // other shortcuts bring the page back first
+}, true);
+
 /* backup */
 $('#backupBtn').addEventListener('click', () => {
   $('#backupText').value = JSON.stringify({app: 'momentum-todo', version: 1, exported: new Date().toISOString(), data: S}, null, 2);
