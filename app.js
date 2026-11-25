@@ -100,6 +100,22 @@ const THEMES = [
   {name:'Night',  sky:['#070b1f','#18234a','#33406e'], sun:'#f2f0e1', sunY:200, layers:['#2b3660','#1a2245','#0b1028'], stars:true},
   {name:'Desert', sky:['#e98a5b','#f2b27b','#f7d9a6'], sun:'#fff0c9', sunY:430, layers:['#d08a5c','#a85f3e','#6e3826']},
   {name:'Ocean',  sky:['#1f5f86','#5fa3c4','#bfe0e8'], sun:'#ffffff', sunY:350, layers:['#4f8fae','#2c6c8f','#123f5c'], water:true},
+  // dark-mode classics
+  {name:'Dracula', sky:['#191a21','#282a36','#44475a'], sun:'#bd93f9', sunY:220, layers:['#6272a4','#44475a','#21222c'], stars:true},
+  {name:'Nord',    sky:['#1f232b','#2e3440','#4c566a'], sun:'#88c0d0', sunY:190, layers:['#5e81ac','#3b4252','#2a2f3a'], stars:true, snow:'#d8dee9', aurora:['#a3be8c','#88c0d0','#b48ead']},
+  {name:'Tokyo Night', sky:['#0f0f17','#1a1b26','#414868'], sun:'#c0caf5', sunY:180, layers:['#292e42','#16161e','#1a1b26'], stars:true, water:true,
+    city:{fill:'#1f2335', lights:['#e0af68','#7aa2f7','#bb9af7','#7dcfff']}, mid:'M0 700 H1440 V900 H0Z'},
+  {name:'Darcula', sky:['#1e1f22','#2b2b2b','#3c3f41'], sun:'#ffc66d', sunY:220, layers:['#4e5254','#3c3f41','#313335'], stars:true,
+    strokes:['#cc7832','#6a8759','#6897bb']},
+  {name:'High Contrast', sky:['#000000','#000000','#000000'], sun:'#ffff00', sunY:210, layers:['#000000','#000000','#000000'], stars:true,
+    strokes:['#ffffff','#00ffff','#ffff00'], strokeW:4},
+  // fun ones
+  {name:'Aloha', sky:['#ff6f91','#ff9671','#ffc75f'], sun:'#fff1b8', sunY:600, layers:['#6b3f7a','#1d7a8c','#c98a5e'],
+    far:'M0 640 L140 628 C260 600 340 520 430 470 L470 462 L500 478 L540 458 L580 470 C660 520 760 600 880 632 L1440 640 V900 H0Z',
+    mid:'M0 640 H1440 V900 H0Z', near:'M0 805 C300 770 600 792 900 806 C1150 818 1300 790 1440 796 V900 H0Z',
+    glitter:true, palms:'#2a1530'},
+  {name:'Daywalker', sky:['#030000','#1f0205','#5c0710'], sun:'#c8101b', sunY:250, layers:['#2a0508','#0d0203','#050101'],
+    city:{fill:'#120304', lights:['#ff2a2a','#8a0b10','#d9d9d9'], density:.1}, mid:'M0 700 H1440 V900 H0Z', rain:'#b0101a'},
 ];
 let starsSVG = '';
 (function makeStars() {
@@ -108,6 +124,54 @@ let starsSVG = '';
   for (let i = 0; i < 140; i++) s += `<circle cx="${(r()*1440).toFixed(0)}" cy="${(r()*520).toFixed(0)}" r="${(r()*1.4+.3).toFixed(2)}" fill="#fff" opacity="${(r()*.7+.2).toFixed(2)}"/>`;
   starsSVG = s;
 })();
+const rng = seed => () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+function citySVG({fill, lights, density = .22}) {
+  const r = rng(11); let x = -10, b = '', w = '';
+  while (x < 1440) {
+    const bw = 40 + r() * 70, bh = 90 + r() * 250, y = 700 - bh;
+    b += `<rect x="${x.toFixed(0)}" y="${y.toFixed(0)}" width="${(bw - 4).toFixed(0)}" height="${(bh + 10).toFixed(0)}"/>`;
+    if (r() < .3) b += `<rect x="${(x + bw / 2 - 3).toFixed(0)}" y="${(y - 26).toFixed(0)}" width="3" height="26"/>`;
+    for (let wy = y + 14; wy < 690; wy += 18) for (let wx = x + 8; wx < x + bw - 14; wx += 14)
+      if (r() < density) w += `<rect x="${wx.toFixed(0)}" y="${wy.toFixed(0)}" width="5" height="8" fill="${lights[Math.floor(r() * lights.length)]}"/>`;
+    x += bw;
+  }
+  return `<g fill="${fill}">${b}</g><g opacity=".75">${w}</g>`;
+}
+function palmSVG(x, y, h, lean, c) {
+  const tx = x + lean, ty = y - h, L = h * .55;
+  let s = `<path d="M${x} ${y} Q${x + lean * .15} ${y - h * .55} ${tx} ${ty}" stroke="${c}" stroke-width="${(h * .045).toFixed(1)}" fill="none" stroke-linecap="round"/>`;
+  for (const a of [-175, -150, -125, -100, -80, -55, -30, -5]) {
+    const rad = a * Math.PI / 180;
+    const ex = tx + Math.cos(rad) * L, ey = ty + Math.sin(rad) * L * .5 + L * .5;
+    const mx = (tx + ex) / 2, my = (ty + ey) / 2 - L * .32;
+    s += `<path d="M${tx} ${ty} Q${mx.toFixed(0)} ${(my - 4).toFixed(0)} ${ex.toFixed(0)} ${ey.toFixed(0)} Q${mx.toFixed(0)} ${(my + 26).toFixed(0)} ${tx} ${ty}Z" fill="${c}"/>`;
+  }
+  return s;
+}
+function rainSVG(c) {
+  const r = rng(23); let s = '';
+  for (let i = 0; i < 160; i++) {
+    const x = r() * 1500, y = r() * 900, l = 24 + r() * 40;
+    s += `<line x1="${x.toFixed(0)}" y1="${y.toFixed(0)}" x2="${(x - l * .25).toFixed(0)}" y2="${(y + l).toFixed(0)}" stroke-opacity="${(r() * .5 + .2).toFixed(2)}"/>`;
+  }
+  return `<g stroke="${c}" stroke-width="1.4" stroke-linecap="round">${s}</g>`;
+}
+function glitterSVG(c, cx) {
+  const r = rng(5); let s = '';
+  for (let y = 648; y < 800; y += 7) {
+    const spread = 30 + (y - 640) * 1.1;
+    for (let k = 0; k < 3; k++) {
+      const w = 10 + r() * 40, x = cx - spread / 2 + r() * spread;
+      s += `<rect x="${x.toFixed(0)}" y="${y}" width="${w.toFixed(0)}" height="2" rx="1" opacity="${(r() * .5 + .3).toFixed(2)}"/>`;
+    }
+  }
+  return `<g fill="${c}">${s}</g>`;
+}
+function auroraSVG(cols) {
+  return `<defs><filter id="aublur" x="-10%" y="-50%" width="120%" height="200%"><feGaussianBlur stdDeviation="22"/></filter></defs>
+    <g filter="url(#aublur)" opacity=".5">${cols.map((c, i) =>
+      `<path d="M-50 ${210 + i * 45} C250 ${120 + i * 50} 520 ${300 + i * 30} 800 ${190 + i * 40} S1300 ${110 + i * 55} 1500 ${200 + i * 35}" stroke="${c}" stroke-width="${46 - i * 10}" fill="none"/>`).join('')}</g>`;
+}
 /* ---- Auto: the scene follows the day's energy, then settles into Night ---- */
 const hexRGB = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
 const mixHex = (a, b, f) => '#' + hexRGB(a).map((v, i) => Math.round(v + (hexRGB(b)[i] - v) * f).toString(16).padStart(2, '0')).join('');
@@ -149,10 +213,15 @@ function renderScene() {
   const t = S.auto ? autoTheme(currentHour()) : THEMES[S.theme % THEMES.length];
   const starsA = t.starsA != null ? t.starsA : (t.stars ? 1 : 0);
   const [far, mid, near] = t.layers;
-  const snow = t.snow ? `<path d="M520 380 L470 420 L500 415 L520 430 L545 412 L575 420 Z M880 360 L830 400 L860 395 L880 410 L905 392 L935 400 Z M1240 400 L1200 430 L1225 426 L1240 438 L1260 424 L1285 430 Z" fill="#f4f8fb" opacity=".9"/>` : '';
-  const near_d = t.water
+  const snow = t.snow ? `<path d="M520 380 L470 420 L500 415 L520 430 L545 412 L575 420 Z M880 360 L830 400 L860 395 L880 410 L905 392 L935 400 Z M1240 400 L1200 430 L1225 426 L1240 438 L1260 424 L1285 430 Z" fill="${typeof t.snow === 'string' ? t.snow : '#f4f8fb'}" opacity=".9"/>` : '';
+  const far_d = t.far || 'M0 560 L180 430 L330 520 L520 380 L700 500 L880 360 L1060 490 L1240 400 L1440 480 V900 H0Z';
+  const mid_d = t.mid || 'M0 650 C200 560 340 640 480 590 C640 530 760 640 940 600 C1120 560 1260 620 1440 580 V900 H0Z';
+  const near_d = t.near || (t.water
     ? 'M0 760 C200 748 400 772 640 758 C880 744 1080 770 1300 756 C1370 752 1410 754 1440 754 V900 H0Z'
-    : 'M0 760 C240 700 420 780 640 740 C860 700 1040 780 1240 730 C1340 705 1400 720 1440 715 V900 H0Z';
+    : 'M0 760 C240 700 420 780 640 740 C860 700 1040 780 1240 730 C1340 705 1400 720 1440 715 V900 H0Z');
+  // outline only the ridge line (drop the closing V900 H0Z so the frame edges stay clean)
+  const stroke = (k, d) => t.strokes ? `<path d="${d.replace(/ V900 H0Z$/, '')}" fill="none" stroke="${t.strokes[k]}" stroke-width="${t.strokeW || 2.5}" stroke-linejoin="round"/>` : '';
+  const palms = t.palms ? palmSVG(150, 830, 330, 70, t.palms) + palmSVG(290, 840, 250, 40, t.palms) + palmSVG(1340, 835, 300, -60, t.palms) : '';
   $('#scene').innerHTML = `
   <svg viewBox="0 0 1440 900" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
     <defs>
@@ -164,13 +233,18 @@ function renderScene() {
     </defs>
     <rect width="1440" height="900" fill="url(#sky)"/>
     ${starsA > 0.01 ? `<g opacity="${starsA.toFixed(2)}">${starsSVG}</g>` : ''}
+    ${t.aurora ? auroraSVG(t.aurora) : ''}
     <circle cx="1060" cy="${t.sunY}" r="220" fill="url(#glow)"/>
     <circle cx="1060" cy="${t.sunY}" r="${Math.round(62 - 16 * starsA)}" fill="${t.sun}" opacity="${(.9 + .05 * starsA).toFixed(2)}"/>
-    <path d="M0 560 L180 430 L330 520 L520 380 L700 500 L880 360 L1060 490 L1240 400 L1440 480 V900 H0Z" fill="${far}" opacity=".85"/>
+    <path d="${far_d}" fill="${far}" opacity="${t.strokes ? 1 : .85}"/>${stroke(0, far_d)}
     ${snow}
     <rect y="400" width="1440" height="300" fill="url(#haze)"/>
-    <path d="M0 650 C200 560 340 640 480 590 C640 530 760 640 940 600 C1120 560 1260 620 1440 580 V900 H0Z" fill="${mid}"/>
-    <path d="${near_d}" fill="${near}"/>
+    ${t.city ? citySVG(t.city) : ''}
+    <path d="${mid_d}" fill="${mid}"/>${stroke(1, mid_d)}
+    ${t.glitter ? glitterSVG(t.sun, 1060) : ''}
+    <path d="${near_d}" fill="${near}"/>${stroke(2, near_d)}
+    ${palms}
+    ${t.rain ? rainSVG(t.rain) : ''}
   </svg>`;
   $('#themeName').textContent = S.auto ? `Auto · ${t.name}` : t.name;
   $('#themeBtn').title = S.auto ? 'follows the time of day — click for fixed backgrounds' : 'next background';
@@ -533,7 +607,7 @@ $('#addCatBtn').addEventListener('click', () => {
 $('#newCat').addEventListener('keydown', e => { if (e.key === 'Enter') $('#addCatBtn').click(); });
 $('#dockBtn').addEventListener('click', () => { S.docked = !S.docked; save(); render(); });
 $('#themeBtn').addEventListener('click', () => {
-  // Auto → Dawn → … → Ocean → Auto
+  // Auto → Dawn → … → Daywalker → Auto (order follows THEMES)
   if (S.auto) { S.auto = false; S.theme = 0; }
   else if (S.theme >= THEMES.length - 1) S.auto = true;
   else S.theme++;

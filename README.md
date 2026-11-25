@@ -12,7 +12,7 @@ No accounts, no network requests: everything is stored locally in your browser.
 - **Paste a list**: paste several lines at once (plain lines, bullets, numbered items or `[ ]` / `[x]` checkboxes) and each line becomes a task.
 - **Copy as Markdown**: copy the visible tasks to the clipboard as a Markdown checklist.
 - **Clock and date**: click the clock to switch between 12- and 24-hour time.
-- **Scenic backgrounds**: by default the scene follows the time of day, blending through night, dawn, morning, midday, afternoon, golden hour and dusk. Or pick a fixed theme: Dawn, Alpine, Forest, Dusk, Night, Desert or Ocean.
+- **Scenic backgrounds**: by default the scene follows the time of day, blending through night, dawn, morning, midday, afternoon, golden hour and dusk. Or pick a fixed theme: Dawn, Alpine, Forest, Dusk, Night, Desert, Ocean, the dark-mode classics Dracula, Darcula, Nord (with aurora), Tokyo Night and High Contrast, Aloha (Hawaiian sunset) or Daywalker (blood moon over a rainy city).
 - **Dock to the side** or keep the list centered.
 - **Backup and restore**: copy or download your data as JSON, and restore it from a file or pasted JSON.
 - **Daily brief**: click **Brief** (or press `]`) to read `summary.md` from the extension folder, rendered as Markdown. A dot on the button means it changed since you last read it. Meant for a scheduled job (e.g. Claude) that writes a fresh summary each morning; see [Daily brief](#daily-brief).
